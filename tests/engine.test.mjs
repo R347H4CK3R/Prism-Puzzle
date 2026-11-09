@@ -1,0 +1,13 @@
+import {test} from 'node:test'; import assert from 'node:assert/strict';
+import {Cube, Lights, Slide} from '../web/engine.mjs';
+test('cube starts solved with 54 distinct stickers',()=>{const c=new Cube();assert.equal(c.solved,true);assert.equal(c.stickers.length,54);});
+test('each face turn has order four and preserves stickers',()=>{for(const face of ['U','D','L','R','F','B']) {const c=new Cube(),start=JSON.stringify(c.stickers);for(let i=0;i<4;i++)c.turn(face);assert.equal(JSON.stringify(c.stickers),start);}});
+test('scramble and unlimited hints restore any reachable state',()=>{for(let n=0;n<40;n++){const c=new Cube();c.scramble(30);for(let k=0;k<20;k++)c.turn(['U','R','F','L','D','B'][k%6],k%2?1:-1);for(let i=0;i<80&&!c.solved;i++)c.hint();assert.equal(c.solved,true);assert.equal(c.hint(),null);}});
+test('cube serialized history round trips',()=>{const c=new Cube();c.scramble();const d=new Cube(c.history);assert.deepEqual(d.stickers,c.stickers);});
+test('lights hints solve every generated board',()=>{for(let n=0;n<30;n++){let p=new Lights();p.scramble();p.toggle(n%25);while(!p.solved)p.hint();assert.ok(p.cells.every(x=>!x));}});
+test('sliding hints solve, illegal moves do not change board',()=>{const p=new Slide();p.scramble(100);const b=[...p.cells];assert.equal(p.move(p.cells.indexOf(0)),false);assert.deepEqual(p.cells,b);for(let i=0;i<200&&!p.solved;i++)p.hint();assert.equal(p.solved,true);});
+test('front clockwise moves upper edge to right edge',()=>{const c=new Cube();const sticker=c.stickers.find(t=>t.color==='U'&&t.p[0]===0&&t.p[2]===1);c.turn('F');assert.deepEqual(sticker.p,[1,0,1]);assert.deepEqual(sticker.n,[1,0,0]);});
+test('slide saved path reconstructs state after scrambling and moves',()=>{for(let n=0;n<30;n++){const s=new Slide();s.scramble(60);for(let k=0;k<10;k++)s.hint();const path=s.history.map((v,i)=>s.history[i+1]??s.cells.indexOf(0));const copy=new Slide();path.forEach(i=>copy.move(i));assert.deepEqual(copy.cells,s.cells);}});
+test('inverse turns cancel hint history',()=>{const c=new Cube();c.turn('R');c.turn('R',-1);assert.equal(c.solved,true);assert.deepEqual(c.history,[]);});
+test('lights and slide reject out of range input',()=>{const l=new Lights(),s=new Slide();assert.equal(l.toggle(-1),false);assert.equal(s.move(9),false);assert.ok(l.solved&&s.solved);});
+test('hint never disturbs a solved Lights Out null-space state',()=>{const p=new Lights();[1,2,3,5,7,9,10,11,13,14,15,17,19,21,22,23].forEach(i=>p.toggle(i));assert.equal(p.solved,true);assert.equal(p.hint(),null);assert.equal(p.solved,true);});

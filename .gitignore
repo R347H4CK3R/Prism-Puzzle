@@ -1,0 +1,11 @@
+.gradle/
+**/build/
+.DS_Store
+android/local.properties
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+node_modules/
+DerivedData/
+*.xcodeproj/

@@ -4,7 +4,7 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   engine:
     runs-on: ubuntu-latest
@@ -25,10 +25,10 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 8080 --directory web &
       - run: node tests/ui.cjs
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Prism-Puzzle-UI-evidence
-          path: docs/prism-phone.png
+      - name: Save ui output as draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "ui-${GITHUB_RUN_NUMBER}" docs/prism-phone.png --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-UI-evidence ${GITHUB_RUN_NUMBER}" --notes "Automated mobile browser evidence. Not native-device evidence."
   android:
     runs-on: ubuntu-latest
     steps:
@@ -44,10 +44,10 @@ jobs:
         with:
           gradle-version: '8.9'
       - run: gradle -p android assembleDebug lintDebug
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Prism-Puzzle-Android-debug
-          path: android/app/build/outputs/apk/debug/*.apk
+      - name: Save android output as draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "android-${GITHUB_RUN_NUMBER}" android/app/build/outputs/apk/debug/*.apk --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-Android-debug ${GITHUB_RUN_NUMBER}" --notes "Debug-signed APK. Build and lint passed; device testing required."
   ios:
     runs-on: macos-15
     steps:
@@ -56,7 +56,7 @@ jobs:
       - run: cd ios && xcodegen generate
       - run: xcodebuild -project ios/PrismPuzzle.xcodeproj -scheme PrismPuzzle -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
       - run: mkdir -p package/Payload && cp -R build/Build/Products/Release-iphoneos/PrismPuzzle.app package/Payload/ && cd package && zip -qr ../Prism-Puzzle-unsigned.ipa Payload
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Prism-Puzzle-iOS-unsigned
-          path: Prism-Puzzle-unsigned.ipa
+      - name: Save ios output as draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "ios-${GITHUB_RUN_NUMBER}" Prism-Puzzle-unsigned.ipa --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-iOS-unsigned ${GITHUB_RUN_NUMBER}" --notes "Unsigned device IPA. Compile passed; signing and device validation required."

@@ -26,7 +26,6 @@ jobs:
       - run: python3 -m http.server 8080 --directory web &
       - run: node tests/ui.cjs
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: Prism-Puzzle-UI-evidence
           path: docs/prism-phone.png
@@ -39,6 +38,8 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'

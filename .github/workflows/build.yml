@@ -8,11 +8,15 @@ on:
         description: 'Run only browser UI checks when native runtime is unchanged'
         type: boolean
         default: false
+      simulator_only:
+        description: 'Run only native iPhone simulator checks when app runtime is unchanged'
+        type: boolean
+        default: false
 permissions:
   contents: write
 jobs:
   engine:
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.ui_only }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.ui_only && !inputs.simulator_only) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +25,7 @@ jobs:
           node-version: 22
       - run: npm test && npm run sync && git diff --exit-code web/bundle.js android/app/src/main/assets ios/PrismPuzzle/Web
   ui:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.simulator_only }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +43,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "ui-${GITHUB_RUN_NUMBER}" docs/prism-phone.png docs/chromium-touch-qa.png docs/webkit-touch-qa.png --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-UI-evidence ${GITHUB_RUN_NUMBER}" --notes "Automated mobile browser evidence. Not native-device evidence."
   android:
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.ui_only }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.ui_only && !inputs.simulator_only) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +63,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "android-${GITHUB_RUN_NUMBER}" android/app/build/outputs/apk/debug/*.apk --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-Android-debug ${GITHUB_RUN_NUMBER}" --notes "Debug-signed APK. Build and lint passed; device testing required."
   ios:
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.ui_only }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.ui_only && !inputs.simulator_only) }}
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +77,7 @@ jobs:
         run: gh release create "ios-${GITHUB_RUN_NUMBER}" Prism-Puzzle-unsigned.ipa --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-iOS-unsigned ${GITHUB_RUN_NUMBER}" --notes "Unsigned device IPA. Compile passed; signing and device validation required."
 
   ios-simulator:
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.ui_only }}
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.ui_only || inputs.simulator_only }}
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -81,5 +86,14 @@ jobs:
       - name: Test native iPhone touch controls and hints
         run: |
           device=$(xcrun simctl list devices available -j | python3 -c 'import sys,json; d=json.load(sys.stdin); print(next(x["udid"] for xs in d["devices"].values() for x in xs if "iPhone" in x["name"]))')
-          xcodebuild -project ios/PrismPuzzle.xcodeproj -scheme PrismPuzzle -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+          xcodebuild -project ios/PrismPuzzle.xcodeproj -scheme PrismPuzzle -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO -resultBundlePath PrismSimulator.xcresult CODE_SIGNING_ALLOWED=NO test
 
+      - name: Preserve simulator diagnostics
+        if: always() && !cancelled()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -d PrismSimulator.xcresult ]; then
+            zip -qr PrismSimulator-results.zip PrismSimulator.xcresult
+            gh release create "simulator-${GITHUB_RUN_NUMBER}" PrismSimulator-results.zip --draft --target "$GITHUB_SHA" --title "Prism-Puzzle simulator evidence ${GITHUB_RUN_NUMBER}" --notes "Native simulator test diagnostics. Review test outcome; this is not device or release certification."
+          fi

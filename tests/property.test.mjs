@@ -1,0 +1,16 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {Cube, Lights, Slide} from '../web/engine.mjs';
+const names=['U','D','R','L','F','B'];
+function rng(seed){return()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};}
+const vectors={U:[0,1,0],D:[0,-1,0],R:[1,0,0],L:[-1,0,0],F:[0,0,1],B:[0,0,-1]};
+const dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0);
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+// Independent Rodrigues rotation with axis equal to the outward face normal.
+function referenceTurn(state,face,d){const axis=vectors[face];for(const t of state)if(dot(t.p,axis)===1){for(const key of ['p','n']){const v=t[key],c=cross(axis,v),along=dot(axis,v);t[key]=v.map((_,i)=>(axis[i]*along-d*c[i])||0);}}}
+const snap=c=>JSON.stringify(c.stickers);
+test('30,000 seeded physical turns agree with independent vector reference',()=>{for(let seed=1;seed<=300;seed++){const r=rng(seed),c=new Cube(),reference=structuredClone(c.stickers);for(let n=0;n<100;n++){const f=names[Math.floor(r()*6)],d=r()<.5?1:-1;c.turn(f,d);referenceTurn(reference,f,d);assert.deepEqual(c.stickers,reference,`seed ${seed}, step ${n}`);const keys=new Set(c.stickers.map(t=>`${t.p}/${t.n}`));assert.equal(keys.size,54);assert.equal(c.stickers.filter(t=>t.color==='U').length,9);}}});
+test('cube group identities and opposite-face commutativity',()=>{for(const [a,b] of [['R','L'],['U','D'],['F','B']]){const x=new Cube(),y=new Cube();x.turn(a);x.turn(b);y.turn(b);y.turn(a);assert.equal(snap(x),snap(y));}const c=new Cube();for(let i=0;i<6;i++)for(const[f,d]of [['R',1],['U',1],['R',-1],['U',-1]])c.turn(f,d);assert.equal(c.solved,true);});
+test('1,000 saved cube games solve with finite free hints after arbitrary play',()=>{for(let seed=1;seed<=1000;seed++){const r=rng(seed),c=new Cube();for(let n=0;n<150;n++)c.turn(names[Math.floor(r()*6)],r()<.5?1:-1);const copy=new Cube(JSON.parse(JSON.stringify(c.history)));assert.equal(snap(copy),snap(c));let remaining=copy.history.length;while(!copy.solved){assert.ok(remaining-->0,`seed ${seed} cannot finish`);assert.notEqual(copy.hint(),null);}const before=snap(copy);for(let n=0;n<20;n++)assert.equal(copy.hint(),null);assert.equal(snap(copy),before);}});
+test('1,000 Lights Out games preserve solvability through taps, hints and saves',()=>{for(let seed=1;seed<=1000;seed++){const r=rng(seed),p=new Lights();for(let n=0;n<80;n++){if(r()<.2)p.hint();else p.toggle(Math.floor(r()*25));}const saved=new Lights();[...p.pending].forEach(i=>saved.toggle(i));assert.deepEqual(saved.cells,p.cells);let budget=25;while(!saved.solved){assert.ok(budget-->0);assert.notEqual(saved.hint(),null);}assert.equal(saved.hint(),null);}});
+test('1,000 sliding games retain valid permutations and a solving saved path',()=>{for(let seed=1;seed<=1000;seed++){const r=rng(seed),p=new Slide();for(let n=0;n<200;n++){if(r()<.15)p.hint();else p.move(Math.floor(r()*9));assert.deepEqual([...p.cells].sort((a,b)=>a-b),[0,1,2,3,4,5,6,7,8]);}const saved=new Slide();const path=p.history.map((_,i)=>p.history[i+1]??p.cells.indexOf(0));path.forEach(i=>assert.equal(saved.move(i),true));assert.deepEqual(saved.cells,p.cells);let budget=saved.history.length;while(!saved.solved){assert.ok(budget-->0);assert.notEqual(saved.hint(),null);}assert.equal(saved.hint(),null);}});

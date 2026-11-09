@@ -22,9 +22,11 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-save playwright@1.58.2
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: python3 -m http.server 8080 --directory web &
       - run: node tests/ui.cjs
+      - run: node tests/touch-ui.cjs chromium
+      - run: node tests/touch-ui.cjs webkit
       - name: Save ui output as draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -60,3 +62,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "ios-${GITHUB_RUN_NUMBER}" Prism-Puzzle-unsigned.ipa --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-iOS-unsigned ${GITHUB_RUN_NUMBER}" --notes "Unsigned device IPA. Compile passed; signing and device validation required."
+
+  ios-simulator:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: cd ios && xcodegen generate
+      - name: Test native iPhone touch controls and hints
+        run: |
+          device=$(xcrun simctl list devices available -j | python3 -c 'import sys,json; d=json.load(sys.stdin); print(next(x["udid"] for xs in d["devices"].values() for x in xs if "iPhone" in x["name"]))')
+          xcodebuild -project ios/PrismPuzzle.xcodeproj -scheme PrismPuzzle -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
+

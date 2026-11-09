@@ -1,36 +1,34 @@
 # Prism Puzzle
 
-A quiet, colorful pocket playground for iPhone, iPad and Android. Twist a 3D cube, untangle Lights Out, or slide your way through an eight-tile puzzle. Hints are unlimited, free, and computed entirely on your device.
+An offline puzzle studio for iPhone, iPad and Android. Seven tactile games, unlimited free hints, no ads, accounts, analytics or network dependency.
 
-## What is implemented
-- Physical 54-sticker, 3×3 twist cube with all six face turns, whole-cube orbit, touch face swipes and labeled turn buttons.
-- Lights Out and Slide Nine, generated from solvable states.
-- Unlimited local hints that retrace the player's move path. These guarantee a route back, **not an optimal or instructional cube-solving algorithm**.
-- Automatic local progress saving for all three games, readable face labels, responsive tablet/phone layouts, and progress reset.
-- Bundled Android WebView and SwiftUI/WKWebView apps. No CDN, network requests, account, ads, analytics, or subscriptions. Android requests no Internet permission.
+## Games
+- **Twist Cube**: manipulate a 3×3 cube, twist complete layers and rotate the object to inspect every side.
+- **Pocket Cube**: a compact 2×2 variation with the same direct controls.
+- **Block Assembly**: original studded pieces, three trays, lift/rotate/snap controls and collision checking. Not affiliated with LEGO.
+- **Fifteen Tiles / Slide Nine**: move numbered wooden tiles into the gap.
+- **Tower**: move four disks to the goal post without putting larger disks on smaller ones.
+- **Lights Out**: flip neighboring lights to turn the board dark.
 
-## Run and test
-Requires Node 22+ and Python 3 for preview. No runtime npm dependencies.
+Hints run locally with no usage limit. Cube and sliding hints retrace the play path, Lights Out tracks pending flips, Tower uses shortest-path search, and Block Assembly finds valid fits or lifts a blocking piece. Not all hints are optimal.
 
-```sh
+## Run and verify
+Requires Node 22 or newer for development. Runtime has no third-party JavaScript dependencies.
+
+```
 npm test
 npm run sync
 npm run preview
 ```
-Open http://localhost:8080. The browser preview requires its local server; native apps bundle the same assets and do not need a server. After editing web assets, run `npm run sync` before building native apps.
 
-Browser smoke suite: `npm install --no-save playwright@1.58.2`, `npx playwright install chromium`, start preview, then `node tests/ui.cjs`. `CHROMIUM_PATH` can select a system browser. CI runs this separately and captures a phone screenshot.
+Open http://localhost:8080. Sync copies self-contained assets into both native wrappers. UI suites use Playwright and include Chromium touch emulation plus WebKit pointer checks; they are not physical-device evidence.
 
-## Android
-Install JDK 17, Android SDK 35, Gradle 8.9. Run `gradle -p android assembleDebug lintDebug`. Debug APK: `android/app/build/outputs/apk/debug/app-debug.apk`. Install for testing using `adb install -r` on an authorized connected device. Release APK/AAB signing requires the owner's keystore; no release credentials are included. App package is `com.prismpuzzle.app`.
+## Native builds
+- iOS: install XcodeGen, run `cd ios && xcodegen generate`, then build the PrismPuzzle scheme in Xcode. Minimum iOS 15. Signing is required for installation on an iPhone or App Store submission.
+- Android: Java 17, Android SDK 35 and Gradle 8.9; run `gradle -p android assembleDebug lintDebug`. Debug packages are for testing, not a signed Play Store release.
 
-## iPhone and iPad
-On macOS with Xcode and XcodeGen: `cd ios && xcodegen generate`, open `PrismPuzzle.xcodeproj`, select your signing team and a device, then build. Minimum iOS 15. CI builds an unsigned device app/IPA as a compile check; **unsigned is not directly installable or App Store ready**. For distribution, configure the owner's signing, test physical devices, and archive/export through Xcode. Strata integration must use a verified artifact and explicitly support the required signing method.
+## Progress and privacy
+Progress is stored only on the device. Existing v1 saves migrate without resetting valid puzzles. Damaged inputs are retained in verified recovery copies before replacing active progress. If backup verification fails, persistence pauses and play continues for the session. Reset clears active progress but keeps recovery copies.
 
-## Current verification and release gates
-Eleven engine tests pass locally. The automated mobile browser smoke suite passed in GitHub Actions, covering rendering, controls, persistence, all three hint solves, offline in-session play and no horizontal overflow. iOS device compilation and unsigned IPA packaging passed in run 42558192074. Android setup failed before compilation because a setup action requested an obsolete SDK package; the workflow now requests explicit current packages. Local Chromium cannot start under this computer's socket restrictions, and native touch/gesture testing remains unverified. Actions artifact storage is full. A draft-release storage alternative is awaiting owner approval; no existing artifacts have been deleted. Check actual CI results for the latest native build status. No tablet installation, iPhone installation, store submission, or catalog listing has been verified yet.
-
-Before shipping: complete real touch/VoiceOver/TalkBack testing, airplane-mode cold launch on both platforms, rotation/background/resume tests, corruption/recovery tests, native release signing, privacy/store forms, and listing screenshots. Review current store SDK/deployment requirements. The name and artwork are original to this project but have not undergone trademark clearance. Do not imply affiliation with the Rubik's brand.
-
-## Structure
-`web/` canonical game and UI; `tests/` Node engine and browser tests; `scripts/sync.mjs` native asset packaging; `android/` Gradle project; `ios/` XcodeGen project; `docs/` store copy and verification evidence.
+## Candidate 1.1.0 (3)
+Local logic/app-handler tests and generated-asset checks pass. Native builds, rendered browser tests and physical-device checks must pass for this candidate before release. Previously published 1.0.0 (1) is a separate unsigned prerelease; its checks do not establish readiness of this expansion.

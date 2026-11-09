@@ -6,7 +6,7 @@ const name=process.argv[2]||'chromium';
 (async()=>{
  const browser=await playwright[name].launch({headless:true,...(name==='chromium'&&process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
- const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const page=await context.newPage(),errors=[],remoteRequests=[];page.on('pageerror',e=>errors.push(e.message));page.on('websocket',s=>remoteRequests.push(s.url()));context.on('request',r=>{const u=new URL(r.url());if(!['file:','data:','blob:'].includes(u.protocol)&&u.origin!=='http://127.0.0.1:8080')remoteRequests.push(r.url());});
  await page.addInitScript(()=>localStorage.setItem('prism-v1',JSON.stringify({cube:[],lights:[],slide:[],counts:{cube:0,lights:0,slide:0}})));
  await page.goto('http://127.0.0.1:8080');
  await page.locator('#stage').scrollIntoViewIfNeeded();
@@ -21,6 +21,18 @@ const name=process.argv[2]||'chromium';
  if(cdp){const q=await point(),first={x:q.x,y:q.y,id:1},second={x:stage.x+10,y:stage.y+10,id:2};await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[first]});await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[first,second]});assert.equal((await state()).counts.cube,2,'second finger must not mutate cube');await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{...first,x:first.x+50},second]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForFunction(()=>document.body.dataset.busy!=='true');assert.deepEqual((await state()).cube,[['F',1]],'first finger retains gesture');const r=await point();await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:r.x,y:r.y,id:1}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});assert.equal((await state()).counts.cube,3,'cancel never makes a move');}
  for(const game of ['lights','slide','pocket','slide15','hanoi','bricks']){await page.locator(`[data-game=${game}]`).click();assert.equal(await page.locator('#turns').isVisible(),game==='pocket');await page.locator('#shuffle').click();for(let i=0;i<100 && !(await page.locator('#title').innerText()).includes('Beautifully');i++)await page.locator('#hint').click();await page.waitForFunction(()=>document.body.dataset.busy!=='true');assert.match(await page.locator('#title').innerText(),/Beautifully/);const solved=JSON.stringify(await state());for(let i=0;i<10;i++)await page.locator('#hint').click();assert.equal(JSON.stringify(await state()),solved,'repeated hints preserve solved state');}
  await page.locator('[data-game=cube]').click();await page.locator('#hint').click();await page.waitForFunction(()=>document.body.dataset.busy!=='true');assert.match(await page.locator('#title').innerText(),/Beautifully/);
- await context.setOffline(true);await page.goto(pathToFileURL(path.resolve('web/index.html')).href);assert.equal(await page.locator('.sticker').count(),54);await page.locator('#shuffle').click();await page.locator('#hint').click();assert.equal(errors.length,0,errors.join('\n'));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
- await page.screenshot({path:`docs/${name}-touch-qa.png`,fullPage:true});await browser.close();console.log(`PASS ${name}: trusted gestures, orbit, active-pointer ownership where supported, repeated unlimited hints, hidden controls, offline local-file cold load`);
+ let offlineContext=context,offlinePage=page;
+ if(name==='chromium'){
+  offlineContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,offline:true});
+  offlineContext.on('request',r=>{if(/^https?:|^wss?:/.test(r.url()))remoteRequests.push(r.url());});
+  offlinePage=await offlineContext.newPage();offlinePage.on('pageerror',e=>errors.push(e.message));offlinePage.on('websocket',s=>remoteRequests.push(s.url()));
+  await offlinePage.goto(pathToFileURL(path.resolve('web/index.html')).href);
+ }else await context.setOffline(true);
+ for(const game of ['cube','pocket','lights','slide','slide15','hanoi','bricks']){
+  await offlinePage.locator(`[data-game=${game}]`).click();await offlinePage.locator('#shuffle').click();
+  for(let i=0;i<100&&!(await offlinePage.locator('#title').innerText()).includes('Beautifully');i++){await offlinePage.locator('#hint').click();await offlinePage.waitForFunction(()=>document.body.dataset.busy!=='true');}
+  assert.match(await offlinePage.locator('#title').innerText(),/Beautifully/,`Offline ${game} must solve`);
+ }
+ assert.deepEqual(remoteRequests,[],'No remote runtime request may be attempted');assert.equal(errors.length,0,errors.join('\n'));assert.equal(await offlinePage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await offlinePage.screenshot({path:`docs/${name}-touch-qa.png`,fullPage:true});await browser.close();console.log(`PASS ${name}: ${name==='chromium'?'trusted touch gestures and pointer ownership':'mouse-pointer gestures'}, orbit, repeated unlimited hints, hidden controls, ${name==='chromium'?'offline local-file cold load':'offline in-session gameplay (no WebKit cold-load claim)'}`);
 })().catch(e=>{console.error(e);process.exit(1)});

@@ -79,7 +79,7 @@ grep -q 'platform IOS$' cm-output/diagnostics/macho-platform.txt
 mkdir -p cm-work/package/Payload cm-output/candidate
 ditto "$APP" "cm-work/package/Payload/PrismPuzzle.app"
 (cd cm-work/package && ditto -c -k --keepParent Payload ../../cm-output/candidate/Prism-Puzzle-unsigned.ipa)
-python3 scripts/verify_codemagic_ipa.py --ipa cm-output/candidate/Prism-Puzzle-unsigned.ipa --app-name PrismPuzzle --bundle-id com.prismpuzzle.app --version 1.1.0 --build 3 --minimum-os 15.0 --source-sha "$SOURCE_SHA" --web web --output cm-output/candidate/verification.json
+python3 scripts/verify_codemagic_ipa.py --ipa cm-output/candidate/Prism-Puzzle-unsigned.ipa --app-name PrismPuzzle --bundle-id com.prismpuzzle.app --version 1.1.1 --build 4 --minimum-os 15.0 --source-sha "$SOURCE_SHA" --web web --output cm-output/candidate/verification.json
 cp android/app/build/outputs/apk/debug/app-debug.apk cm-output/candidate/Prism-Puzzle-debug.apk
 (cd cm-output/candidate && shasum -a 256 *.ipa *.apk verification.json > SHA256SUMS.txt)
 # This directory is exposed as a candidate only after every gate above passed.

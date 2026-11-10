@@ -5,7 +5,7 @@ import {PhysicalBrickView} from './brick-view.mjs';
 const $=id=>document.getElementById(id);
 let raw=null,storageOK=true;try{raw=localStorage.getItem('prism-v1');}catch{storageOK=false;}
 const restored=restoreProgress(raw),models=restored.models,counts=restored.counts;
-let canSave=storageOK;
+let canSave=storageOK&&!restored.readOnly;
 if(restored.recovery){try{canSave=canSave&&preserveRecovery(localStorage,restored.recovery);}catch{canSave=false;}if(!canSave)storageOK=false;}
 let game='cube',busy=false,look=false,towerSelection=null,towerDrag=null,towerYaw=0,slideDrag=null;
 const cubeGame=()=>game==='cube'||game==='pocket';
@@ -14,7 +14,7 @@ const cubeView=new PhysicalCubeView($('stage'),$('cube'),{getModel:()=>models[ga
 const brickView=new PhysicalBrickView($('bricks'),{getModel:()=>models.bricks,onChange:message=>{counts.bricks++;after(message);}});
 function save(){if(!canSave)return;try{localStorage.setItem('prism-v1',serializeProgress(models,counts));}catch{storageOK=false;}}
 function lock(value){busy=value;document.body.dataset.busy=String(value);for(const b of document.querySelectorAll('nav button,#turns button,#hint,#shuffle,#view-toggle'))b.disabled=value;}
-function status(message){if(!canSave){$('status').textContent='Saving is paused to protect your existing data. New moves will only last this session.';return;}$('status').textContent=models[game].solved?'Beautifully solved. Take a breath, or try a new puzzle.':message||restored.warning||(!storageOK?'Storage unavailable. You can still play this session offline.':'Unlimited hints. Zero pressure.');}
+function status(message){if(!canSave){$('status').textContent=restored.readOnly?restored.warning:'Saving is paused to protect your existing data. New moves will only last this session.';return;}$('status').textContent=models[game].solved?'Beautifully solved. Take a breath, or try a new puzzle.':message||restored.warning||(!storageOK?'Storage unavailable. You can still play this session offline.':'Unlimited hints. Zero pressure.');}
 function after(message){render();status(message);}
 function render(){
  const m=models[game],cube=cubeGame();$('moves').textContent=counts[game];$('title').textContent=m.solved?'Beautifully solved.':'Find your next move.';$('mode').textContent=info[game][0];$('puzzle-note').textContent=info[game][1]+(game==='bricks'?` Tray ${m.level+1} of 3.`:'');$('instruction').textContent=info[game][2];

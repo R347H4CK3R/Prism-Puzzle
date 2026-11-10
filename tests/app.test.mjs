@@ -74,3 +74,14 @@ test('explicit active-progress reset keeps every recovery copy as promised',()=>
  const f=appFixture({saved:broken,recovery:'older damage'});f.context.confirm=()=>true;f.get('reset').onclick();
  assert.equal(f.values.has('prism-v1'),false);assert.equal(f.values.get('prism-v1-recovery'),'older damage');assert.equal(f.values.get('prism-v1-recovery-1'),broken);
 });
+
+test('an older app never overwrites a newer save format during launch or play',()=>{
+ const future=JSON.stringify({schema:3,cube:{futureFormat:true},counts:{cube:17},newPuzzle:{progress:[1,2,3]}});
+ const f=appFixture({saved:future});
+ assert.equal(f.values.get('prism-v1'),future);
+ f.get('shuffle').onclick();
+ f.game('lights');f.get('board').children[0].onclick({detail:1});
+ assert.equal(f.evaluate('counts.lights'),1);
+ assert.equal(f.values.get('prism-v1'),future);
+ assert.match(f.get('status').textContent,/newer|version|format/i);
+});

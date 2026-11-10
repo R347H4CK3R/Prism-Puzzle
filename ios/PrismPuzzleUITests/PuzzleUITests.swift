@@ -8,13 +8,13 @@ final class PuzzleUITests: XCTestCase {
 
     // Query from the app: WKWebView/WKContentView ancestor types can disagree in AX.
     private func controls(_ text: String) -> XCUIElementQuery {
-        // WebKit exposes aria-pressed navigation controls as AX Switch elements.
-        let navigationNames: Set<String> = [
-            "Twist cube", "Pocket cube", "Block assembly", "Fifteen tiles",
-            "Tower", "Lights out", "Slide nine"
-        ]
-        let query = navigationNames.contains(text) ? app.switches : app.buttons
-        return query.matching(NSPredicate(format: "label CONTAINS %@", text))
+        // WebKit exposes navigation as AX Switches and can change a hint from
+        // Button to Switch after activation. Match both interactive roles on
+        // every fresh snapshot; showControl still requires hittable and enabled.
+        let roles = [XCUIElement.ElementType.button.rawValue,
+                     XCUIElement.ElementType.switch.rawValue]
+        return app.descendants(matching: .any).matching(NSPredicate(
+            format: "elementType IN %@ AND label CONTAINS %@", roles as NSArray, text))
     }
     private var solved: XCUIElement { app.staticTexts["Beautifully solved."] }
 

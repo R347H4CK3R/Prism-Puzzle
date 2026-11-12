@@ -1,11 +1,11 @@
-# Manual Codemagic verification
+# Manual iOS verification
 
-Run workflow `prism-verified-mobile` on the exact reviewed branch/commit. It uses the free-eligible M2 machine with Xcode 26.2, Node 22 and Java 17, capped at 60 minutes. There are no automatic triggers, signing secrets, public releases, or store publishing steps. Keep billing disabled and confirm enough included minutes before starting. Run one app at a time; three 60-minute attempts can use at most 180 build minutes before preparation/accounting overhead.
+Run `prism-ios-candidate` on the exact reviewed candidate branch. It uses the existing free-eligible M2 connection, Xcode 26.2 and Node 22, capped at 60 minutes. Confirm enough included minutes and keep billing disabled before starting. Run one app at a time. There are no automatic triggers, signing secrets, public releases, store uploads, or Android build steps in this workflow.
 
-The workflow retains the current Node, asset-sync, browser, Android compile/lint, iOS simulator tests and unsigned device-build gates. A failed gate stops the pipeline. Diagnostics are private Codemagic artifacts; unsigned IPA and debug APK are promoted to `cm-output/verified/` only after the package's identity, version, arm64 device platform, source bytes and ZIP integrity pass. SHA-256 sums and the exact source commit are included.
+The workflow preserves Node regression tests, generated-asset equality, Chromium/WebKit checks, all native iOS puzzle tests, and unsigned device compilation. It additionally checks the feedback composer in both browser engines and the native simulator. Required checks must pass before artifacts enter `cm-output/verified/`.
 
-This does not satisfy physical-device installation, signing, update-continuity or store gates. Native app version/build values are deliberately unchanged by this CI migration. Before distributing a new update, select appropriate update metadata and reverify that exact source. Do not merge or describe the new workflow as passed until a real hosted run succeeds. Never publish diagnostic output or private source by moving it to a public repository.
+The package verifier checks identity, candidate version/build, minimum iOS 15, arm64 device platform, ZIP integrity and exact bundled-source bytes. Outputs include a verified unsigned IPA, private source archive, verification JSON and SHA-256 sums. Diagnostics and source remain private artifacts. Never move private source or diagnostic logs to a public release.
 
-The Android SDK package installation uses already-accepted machine licenses and fails if additional acceptance is required. Gradle 8.9 is fetched from its official distribution and checked against the published SHA-256. No automatic license acceptance is added.
+Signing, physical-device installation and update continuity still require separate verification. This file describes the intended pipeline, not a claim it passed. The prior multi-platform script remains as historical source but is not selected by this branch's Codemagic configuration. Android is paused.
 
-Local helper regression command: `python3 tests/test_codemagic_ipa.py`. Local Linux checks cannot substitute for the hosted Mac/SDK/browser stages.
+Local checks: `npm test`, `python3 tests/test_codemagic_ipa.py`, `bash -n scripts/verify-ios-candidate.sh`. Local checks cannot substitute for hosted Mac/browser/simulator execution.

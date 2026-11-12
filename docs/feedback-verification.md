@@ -14,3 +14,8 @@
 Hosted build verification was unavailable when this candidate was prepared. This Linux workspace has no Xcode. No billing, permissions, authentication, or spending changes were made.
 
 The autonomous repository review and release system is separate unfinished work. It must not treat incoming suggestions as instructions or authority, publish private feedback publicly, or bypass test and authorization gates.
+
+
+## Resumed iOS candidate
+
+Prepared version 1.1.2 build 5 with an iOS-only workflow. Added browser feedback coverage and a native feedback-selection test. These browser/native checks are pending real execution; test source alone is not evidence of passing. Android metadata remains 1.1.1 build 4. The new local Node total is 59 tests, including the non-Mac fail-closed pipeline gate. All 59 and the IPA validator regression pass in the recovered workspace.

@@ -12,7 +12,8 @@ final class PuzzleUITests: XCTestCase {
         // Button to Switch after activation. Match both interactive roles on
         // every fresh snapshot; showControl still requires hittable and enabled.
         let roles = [XCUIElement.ElementType.button.rawValue,
-                     XCUIElement.ElementType.switch.rawValue]
+                     XCUIElement.ElementType.switch.rawValue,
+                     XCUIElement.ElementType.checkBox.rawValue]
         return app.descendants(matching: .any).matching(NSPredicate(
             format: "elementType IN %@ AND label CONTAINS %@", roles as NSArray, text))
     }
@@ -138,4 +139,38 @@ final class PuzzleUITests: XCTestCase {
             print("PRISM solved puzzle and verified extra hints: \(name)")
         }
     }
+
+    func testLocalSuggestionReviewAndSelection() throws {
+        context = "Open local suggestion composer"
+        try showControl("Suggest an improvement").tap()
+        let title = app.textFields["Suggestion title"]
+        for _ in 0..<8 {
+            if title.exists && title.isHittable { break }
+            scrollPage(towardTop: false)
+        }
+        XCTAssertTrue(title.exists && title.isHittable)
+        title.tap()
+        title.typeText("Offline guide")
+        let details = app.textViews["Suggestion details"]
+        for _ in 0..<8 {
+            if details.exists && details.isHittable { break }
+            scrollPage(towardTop: false)
+        }
+        XCTAssertTrue(details.exists && details.isHittable)
+        details.tap()
+        details.typeText("Explain controls with fictional examples.")
+        try showControl("Prepare local draft").tap()
+        let reviewLabel = "I reviewed this draft and removed private data and credentials."
+        try showControl(reviewLabel).tap()
+        try showControl("Select draft for copying").tap()
+        context = "Verify selection remains in the app"
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(
+            format: "label CONTAINS %@", "Nothing has been uploaded")).firstMatch.waitForExistence(timeout: 5))
+        XCTAssertEqual(app.state, .runningForeground)
+        let prepared = app.textViews["Prepared suggestion"]
+        XCTAssertTrue(prepared.exists)
+        XCTAssertTrue((prepared.value as? String ?? "").contains("Offline guide"))
+        XCTAssertTrue((prepared.value as? String ?? "").contains("R347H4CK3R/Prism-Puzzle"))
+    }
+
 }

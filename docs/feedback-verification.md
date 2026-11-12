@@ -1,21 +1,29 @@
-# Prism feedback implementation checklist
+# Prism feedback verification
 
-- [x] Inspect canonical repository, release, and existing tests.
-- [x] Implement bounded local suggestion preparation with a fixed private destination.
-- [x] Test review gating, edit invalidation, malformed input, Unicode, and safe text handling.
-- [x] Integrate the offline local-copy fallback into the existing bundled UI.
-- [x] Exercise real application handlers and verify current and future-format saves remain intact.
-- [x] Synchronize native web assets and run Node tests, syntax checks, and whitespace validation.
-- [ ] Complete fresh browser layout and touch checks.
-- [ ] Build and test the exact candidate source on macOS/iOS.
-- [ ] Verify native copy controls and physical-device install/upgrade behavior.
-- [ ] Publish only after required checks pass. Keep existing releases unchanged meanwhile.
+## Published 1.1.2 build 5
 
-Hosted build verification was unavailable when this candidate was prepared. This Linux workspace has no Xcode. No billing, permissions, authentication, or spending changes were made.
+- [x] Bounded local drafts with a fixed private repository destination.
+- [x] Review gating, edit invalidation, malformed/Unicode input, safe preview and full-text selection.
+- [x] Real application save preservation, including unsupported future-format saves.
+- [x] Generated web/native asset parity and 60 Node tests at source 79157da4b5bf62259e8afabbf3f7b74cc17084ba.
+- [x] Chromium mobile gameplay, touch/pointer handling and offline cold load; WebKit mouse-pointer and in-session offline tests.
+- [x] Chromium/WebKit feedback/privacy/layout checks.
+- [x] All three native iOS simulator tests, including feedback selection, cube interaction, all puzzles, extra hints and relaunch persistence.
+- [x] Unsigned arm64 iOS-device build and independent IPA/source-byte inspection.
+- [x] Limited public prerelease with five intended assets, independently anonymously re-downloaded and byte-verified.
+- [x] Staged catalog metadata first, then activated the canonical catalog only after public IPA verification; hosted catalog/browser/Pages checks passed.
+- [ ] Physical iPhone installation/gameplay, signed upgrade and actual OS clipboard copy/paste.
+- [ ] Final visual assurance: native screenshots showed full 3D with intermittent edge occlusion; desktop-WebKit capture flattened the cube. Further stable-state diagnostics are separate.
 
-The autonomous repository review and release system is separate unfinished work. It must not treat incoming suggestions as instructions or authority, publish private feedback publicly, or bypass test and authorization gates.
+Release: https://github.com/R347H4CK3R/OmniForge/releases/tag/prism-puzzle-1.1.2-build5
+Canonical source: https://raw.githubusercontent.com/R347H4CK3R/OmniForge/main/unified-source.json
+Exact candidate run: https://codemagic.io/app/6af29ee94856b4f0c715316a/build/6af5e5589679c85ac0af26eb
+IPA SHA256: 0e1dcffe60f4adab4923667baec64d6da254def8ae9b3da4df99d972f0ab2ae6
 
+## Repository-side recurring review support
 
-## Resumed iOS candidate
+- [x] Pure metadata contract with strict input schemas, unchanged deadlines, retained assessment history, current-policy pause gates and exact release/catalog evidence checks.
+- [x] Thirteen contract tests passed after substantive RED/GREEN cycles; full repository suite 73/73 passed.
+- [ ] Actual recurring review schedule installed and verified by the coordinating Dot.
 
-Prepared version 1.1.2 build 5 with an iOS-only workflow. Added browser feedback coverage and a native feedback-selection test. These browser/native checks are pending real execution; test source alone is not evidence of passing. Android metadata remains 1.1.1 build 4. The new local Node total is 59 tests, including the non-Mac fail-closed pipeline gate. All 59 and the IPA validator regression pass in the recovered workspace.
+The contract has no network, credentials, subprocess, public feedback destination or automatic feasibility classifier. All issue content remains untrusted. A reviewer must independently verify authorization and evidence. No production runtime, IPA, app version or build pipeline changes are included in this repository-only follow-up. The private repository/source archive and diagnostics remain private; runtime web assets are necessarily inside the distributed IPA. Android and ScopePilot remain paused.

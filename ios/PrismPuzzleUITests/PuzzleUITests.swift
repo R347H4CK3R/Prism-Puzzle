@@ -176,10 +176,21 @@ final class PuzzleUITests: XCTestCase {
     func testCubeVisualDiagnostic() throws {
         try showControl("New puzzle").tap()
         context = "Capture visible native cube for visual inspection"
-        let screenshot = XCTAttachment(screenshot: app.screenshot())
-        screenshot.name = "Prism native onscreen cube"
-        screenshot.lifetime = .keepAlways
-        add(screenshot)
+        func capture(_ name: String) {
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = name
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+        }
+        capture("Prism cube immediately after scramble")
+        let stickers = app.descendants(matching: .any).matching(NSPredicate(
+            format: "label CONTAINS %@ AND label CONTAINS %@", "face,", "sticker"))
+        print("PRISM visual sticker AX count: \(stickers.count)")
+        _ = try showControl("Free hint")
+        capture("Prism cube after fresh accessibility snapshot")
+        try showControl("Free hint").tap()
+        _ = try showControl("New puzzle")
+        capture("Prism cube after completed hint")
     }
 
 }

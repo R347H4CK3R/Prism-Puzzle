@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 final class PuzzleUITests: XCTestCase {
     let app = XCUIApplication()
@@ -174,23 +175,64 @@ final class PuzzleUITests: XCTestCase {
     }
 
     func testCubeVisualDiagnostic() throws {
-        try showControl("New puzzle").tap()
-        context = "Capture visible native cube for visual inspection"
-        func capture(_ name: String) {
-            let screenshot = XCTAttachment(screenshot: app.screenshot())
-            screenshot.name = name
-            screenshot.lifetime = .keepAlways
-            add(screenshot)
+        // An enabled AX control can be stale immediately after a tap. Require
+        // the app's completion text, then three identical cube-region captures.
+        // This is evidence collection, not an automatic pixel-quality verdict.
+        func waitForStatus(_ text: String, prefix: Bool = false) {
+            let predicate = NSPredicate(format: prefix ? "label BEGINSWITH %@" : "label == %@", text)
+            XCTAssertTrue(app.staticTexts.matching(predicate).firstMatch.waitForExistence(timeout: 10),
+                          "The app must report completion before collecting visual evidence")
         }
-        capture("Prism cube immediately after scramble")
-        let stickers = app.descendants(matching: .any).matching(NSPredicate(
-            format: "label CONTAINS %@ AND label CONTAINS %@", "face,", "sticker"))
-        print("PRISM visual sticker AX count: \(stickers.count)")
+        func captureStable(_ name: String) throws {
+            context = "Wait for stable cube pixels: " + name
+            let stickers = app.descendants(matching: .any).matching(NSPredicate(
+                format: "label CONTAINS %@ AND label CONTAINS %@", "face,", "sticker"))
+            XCTAssertEqual(stickers.count, 54)
+            let frames = stickers.allElementsBoundByIndex.map { $0.frame }.filter {
+                !$0.isEmpty && !$0.isInfinite && !$0.isNull
+            }
+            let bounds = frames.reduce(CGRect.null) { $0.union($1) }.intersection(app.frame)
+            XCTAssertGreaterThan(bounds.width, 100)
+            XCTAssertGreaterThan(bounds.height, 100)
+            var previous: Data?
+            var equalCaptures = 0
+            let deadline = Date().addingTimeInterval(12)
+            while Date() < deadline {
+                let shot = app.screenshot()
+                let cg = try XCTUnwrap(shot.image.cgImage)
+                let sx = CGFloat(cg.width) / app.frame.width
+                let sy = CGFloat(cg.height) / app.frame.height
+                let pixels = CGRect(x: (bounds.minX - app.frame.minX) * sx,
+                                    y: (bounds.minY - app.frame.minY) * sy,
+                                    width: bounds.width * sx, height: bounds.height * sy).integral
+                let crop = try XCTUnwrap(cg.cropping(to: pixels))
+                let data = try XCTUnwrap(UIImage(cgImage: crop).pngData())
+                equalCaptures = data == previous ? equalCaptures + 1 : 1
+                previous = data
+                if equalCaptures >= 3 {
+                    let attachment = XCTAttachment(screenshot: shot)
+                    attachment.name = name + " (three identical cube captures)"
+                    attachment.lifetime = .keepAlways
+                    add(attachment)
+                    print("PRISM stable visual capture: \(name); stickers=54; identical=3")
+                    return
+                }
+            }
+            captureDiagnostics()
+            XCTFail("Cube pixels did not settle within 12 seconds: " + name)
+        }
+        try showControl("New puzzle").tap()
+        waitForStatus("A fresh puzzle. Find your flow.")
         _ = try showControl("Free hint")
-        capture("Prism cube after fresh accessibility snapshot")
+        try captureStable("Prism settled after first scramble")
         try showControl("Free hint").tap()
+        waitForStatus("A helpful ", prefix: true)
         _ = try showControl("New puzzle")
-        capture("Prism cube after completed hint")
+        try captureStable("Prism settled after completed hint")
+        try showControl("New puzzle").tap()
+        waitForStatus("A fresh puzzle. Find your flow.")
+        _ = try showControl("Free hint")
+        try captureStable("Prism settled after second scramble")
     }
 
 }

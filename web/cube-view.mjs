@@ -50,7 +50,9 @@ export class PhysicalCubeView{
    const core=doc.createElement('div');core.className='cube-core';core.setAttribute('aria-hidden','true');
    const span=size/n-1,spacing=n===2?size/4:size/3;
    core.style.transform=`translate3d(${p[0]*spacing}px,${-p[1]*spacing}px,${p[2]*spacing}px)`;
-   for(const f of Object.keys(faces)){const plane=doc.createElement('div');plane.className='core-plane';plane.style.width=plane.style.height=`${span}px`;plane.style.marginLeft=plane.style.marginTop=`${-span/2}px`;plane.style.transform=`${normals[f]} translateZ(${span/2}px)`;core.append(plane);}
+   // Sticker planes already provide the outer black backing. Keeping a second
+   // near-coplanar core face here can occlude them in WebKit's 3D compositor.
+   for(const f of Object.keys(faces)){const[axis,sign]=faces[f];if(p[axis]===sign)continue;const plane=doc.createElement('div');plane.className='core-plane';plane.style.width=plane.style.height=`${span}px`;plane.style.marginLeft=plane.style.marginTop=`${-span/2}px`;plane.style.transform=`${normals[f]} translateZ(${span/2}px)`;core.append(plane);}
    this.cube.append(core);this.cores.push({p,element:core});
   }
   for(const t of model.stickers){const g=stickerGeometry(t,n,size),plane=doc.createElement('div');plane.className='face cubelet-face';plane.dataset.face=g.face;plane.dataset.position=t.p.join(',');plane.style.width=plane.style.height=`${g.size}px`;plane.style.marginLeft=plane.style.marginTop=`${-g.size/2}px`;plane.style.transform=`translate3d(${g.position[0]}px,${g.position[1]}px,${g.position[2]}px) ${g.orientation}`;

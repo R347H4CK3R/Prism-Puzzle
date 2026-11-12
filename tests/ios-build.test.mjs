@@ -27,3 +27,12 @@ test('iOS pipeline fails closed on non-Mac hosts before creating artifacts', () 
   assert.deepEqual(fs.readdirSync(cwd),[]);
  } finally {fs.rmdirSync(cwd);}
 });
+
+test('GitHub candidate workflow is manual iOS-only with private artifacts',()=>{
+ const workflow=fs.readFileSync(new URL('../.github/workflows/build.yml',import.meta.url),'utf8');
+ assert.doesNotMatch(workflow,/^\s+push:|android:|assembleDebug|lintDebug|gh release create/m);
+ assert.match(workflow,/workflow_dispatch:/);
+ assert.match(workflow,/contents: read/);
+ assert.match(workflow,/bash scripts\/verify-ios-candidate\.sh/);
+ assert.match(workflow,/actions\/upload-artifact@v4/);
+});

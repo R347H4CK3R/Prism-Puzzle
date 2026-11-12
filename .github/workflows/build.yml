@@ -1,99 +1,31 @@
-name: Verify and build
+name: Verify iOS candidate
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-    inputs:
-      ui_only:
-        description: 'Run only browser UI checks when native runtime is unchanged'
-        type: boolean
-        default: false
-      simulator_only:
-        description: 'Run only native iPhone simulator checks when app runtime is unchanged'
-        type: boolean
-        default: false
 permissions:
-  contents: write
+  contents: read
 jobs:
-  engine:
-    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.ui_only && !inputs.simulator_only) }}
-    runs-on: ubuntu-latest
+  ios-candidate:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm test && npm run sync && git diff --exit-code web/bundle.js android/app/src/main/assets ios/PrismPuzzle/Web
-  ui:
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.simulator_only }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Run all iOS candidate gates
+        run: bash scripts/verify-ios-candidate.sh
+      - name: Preserve private diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          node-version: 22
-      - run: npm install --no-save playwright@1.58.2
-      - run: npx playwright install --with-deps chromium webkit
-      - run: python3 -m http.server 8080 --directory web &
-      - run: node tests/ui.cjs
-      - run: node tests/touch-ui.cjs chromium
-      - run: node tests/touch-ui.cjs webkit
-      - name: Save ui output as draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "ui-${GITHUB_RUN_NUMBER}" docs/prism-phone.png docs/chromium-touch-qa.png docs/webkit-touch-qa.png --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-UI-evidence ${GITHUB_RUN_NUMBER}" --notes "Automated mobile browser evidence. Not native-device evidence."
-  android:
-    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.ui_only && !inputs.simulator_only) }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+          name: prism-ios-diagnostics
+          path: cm-output/diagnostics/
+          if-no-files-found: ignore
+      - name: Preserve verified private candidate
+        uses: actions/upload-artifact@v4
         with:
-          distribution: temurin
-          java-version: 17
-      - uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools platforms;android-35 build-tools;35.0.0
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-      - run: gradle -p android assembleDebug lintDebug
-      - name: Save android output as draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "android-${GITHUB_RUN_NUMBER}" android/app/build/outputs/apk/debug/*.apk --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-Android-debug ${GITHUB_RUN_NUMBER}" --notes "Debug-signed APK. Build and lint passed; device testing required."
-  ios:
-    if: ${{ github.event_name != 'workflow_dispatch' || (!inputs.ui_only && !inputs.simulator_only) }}
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - run: brew install xcodegen
-      - run: cd ios && xcodegen generate
-      - run: xcodebuild -project ios/PrismPuzzle.xcodeproj -scheme PrismPuzzle -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
-      - run: mkdir -p package/Payload && cp -R build/Build/Products/Release-iphoneos/PrismPuzzle.app package/Payload/ && cd package && zip -qr ../Prism-Puzzle-unsigned.ipa Payload
-      - name: Save ios output as draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "ios-${GITHUB_RUN_NUMBER}" Prism-Puzzle-unsigned.ipa --draft --target "$GITHUB_SHA" --title "Prism-Puzzle-iOS-unsigned ${GITHUB_RUN_NUMBER}" --notes "Unsigned device IPA. Compile passed; signing and device validation required."
-
-  ios-simulator:
-    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.ui_only || inputs.simulator_only }}
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - run: brew install xcodegen
-      - run: cd ios && xcodegen generate
-      - name: Test native iPhone touch controls and hints
-        run: |
-          device=$(xcrun simctl list devices available -j | python3 -c 'import sys,json; d=json.load(sys.stdin); print(next(x["udid"] for xs in d["devices"].values() for x in xs if "iPhone" in x["name"]))')
-          xcodebuild -project ios/PrismPuzzle.xcodeproj -scheme PrismPuzzle -destination "platform=iOS Simulator,id=$device" -parallel-testing-enabled NO -resultBundlePath PrismSimulator.xcresult CODE_SIGNING_ALLOWED=NO test
-
-      - name: Preserve simulator diagnostics
-        if: always() && !cancelled()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ -d PrismSimulator.xcresult ]; then
-            zip -qr PrismSimulator-results.zip PrismSimulator.xcresult
-            gh release create "simulator-${GITHUB_RUN_NUMBER}" PrismSimulator-results.zip --draft --target "$GITHUB_SHA" --title "Prism-Puzzle simulator evidence ${GITHUB_RUN_NUMBER}" --notes "Native simulator test diagnostics. Review test outcome; this is not device or release certification."
-          fi
+          name: prism-ios-verified
+          path: cm-output/verified/
+          if-no-files-found: error

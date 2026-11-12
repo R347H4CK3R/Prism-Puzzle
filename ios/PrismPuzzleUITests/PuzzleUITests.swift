@@ -173,4 +173,13 @@ final class PuzzleUITests: XCTestCase {
         XCTAssertTrue((prepared.value as? String ?? "").contains("R347H4CK3R/Prism-Puzzle"))
     }
 
+    func testCubeVisualDiagnostic() throws {
+        try showControl("New puzzle").tap()
+        context = "Capture visible native cube for visual inspection"
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Prism native onscreen cube"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+    }
+
 }

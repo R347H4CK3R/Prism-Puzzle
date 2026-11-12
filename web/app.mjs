@@ -1,3 +1,4 @@
+import {wireFeedback} from './feedback.mjs';
 import {Cube,Lights,Slide,PocketCube,Slide15,Hanoi,Bricks,faces} from './engine.mjs';
 import {restoreProgress,serializeProgress,preserveRecovery} from './progress.mjs';
 import {PhysicalCubeView} from './cube-view.mjs';
@@ -52,3 +53,5 @@ $('view-toggle').onclick=()=>{if(busy)return;cancelInteractions();look=!look;aft
 $('shuffle').onclick=()=>{if(busy)return;cancelInteractions();const factories={cube:()=>new Cube(),pocket:()=>new PocketCube(),lights:()=>new Lights(),slide:()=>new Slide(),slide15:()=>new Slide15(),hanoi:()=>new Hanoi(),bricks:()=>new Bricks((models.bricks.level+1)%3)};models[game]=factories[game]();models[game].scramble(game==='pocket'?12:24);counts[game]=0;look=false;after('A fresh puzzle. Find your flow.');};
 $('reset').onclick=()=>{if(confirm('Erase active puzzle progress on this device? Recovery copies will be kept.')){try{localStorage.removeItem('prism-v1');}catch{}location.reload();}};
 render();status();
+
+wireFeedback(document.querySelector('#feedback-form'));

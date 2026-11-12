@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import * as engine from '../web/engine.mjs';
 import * as progress from '../web/progress.mjs';
+import * as feedback from '../web/feedback.mjs';
 
 // Exercise the real app handlers with only the browser boundary replaced.
 function appFixture({saved=null,recovery=null,backupFailure=false}={}){
@@ -20,12 +21,14 @@ function appFixture({saved=null,recovery=null,backupFailure=false}={}){
  }
  const ids=new Map(),get=id=>{if(!ids.has(id))ids.set(id,new Element());return ids.get(id);};
  const nav=[];for(const game of ['cube','pocket','lights','slide','slide15','hanoi','bricks']){const e=new Element();e.dataset.game=game;nav.push(e);}
- const document={getElementById:get,createElement:()=>new Element(),body:new Element(),querySelectorAll:selector=>selector==='nav button'?nav:[...nav,...get('turns').children,get('hint'),get('shuffle'),get('view-toggle')]};
+ const feedbackNodes={kind:{name:'kind',value:'addition'},title:{name:'title',value:'Offline guide'},details:{name:'details',value:'Explain controls without a connection.'},reviewed:{name:'reviewed',checked:false},error:{textContent:''},preview:{value:'',focus(){this.focused=true;},select(){this.selected=true;},setSelectionRange(start,end){this.selection=[start,end];}},result:{hidden:true},copy:{disabled:true},status:{textContent:''}};
+ const feedbackForm={querySelector(selector){const key=selector.match(/name="([^" ]+)"/)?.[1]||selector.match(/data-feedback-([^\]]+)/)?.[1];return feedbackNodes[key];}};
+ const document={querySelector:selector=>selector==='#feedback-form'?feedbackForm:null,getElementById:get,createElement:()=>new Element(),body:new Element(),querySelectorAll:selector=>selector==='nav button'?nav:[...nav,...get('turns').children,get('hint'),get('shuffle'),get('view-toggle')]};
  const view=class{setMode(){}render(){}cancelGesture(){}cancel(){}};
  const storage={getItem:k=>values.get(k)??null,setItem(k,v){if(k.startsWith('prism-v1-recovery')&&backupFailure){if(backupFailure==='throw')throw Error('quota');return;}values.set(k,v);},removeItem:k=>values.delete(k)};
- const context=vm.createContext({...engine,...progress,PhysicalCubeView:view,PhysicalBrickView:view,document,localStorage:storage,matchMedia:()=>({matches:false}),confirm:()=>false,location:{reload(){}},console,setTimeout});
+ const context=vm.createContext({...engine,...progress,...feedback,PhysicalCubeView:view,PhysicalBrickView:view,document,localStorage:storage,matchMedia:()=>({matches:false}),confirm:()=>false,location:{reload(){}},console,setTimeout});
  const source=fs.readFileSync(new URL('../web/app.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'');vm.runInContext(source,context);
- return {get,values,context,game(name){nav.find(e=>e.dataset.game===name).onclick();},evaluate:code=>vm.runInContext(code,context)};
+ return {get,values,context,feedbackNodes,feedbackForm,game(name){nav.find(e=>e.dataset.game===name).onclick();},evaluate:code=>vm.runInContext(code,context)};
 }
 const broken='{"cube":[["not-a-face",1]],"slide":[7]}';
 test('second damaged save is backed up without deleting first recovery',()=>{
@@ -84,4 +87,19 @@ test('an older app never overwrites a newer save format during launch or play',(
  assert.equal(f.evaluate('counts.lights'),1);
  assert.equal(f.values.get('prism-v1'),future);
  assert.match(f.get('status').textContent,/newer|version|format/i);
+});
+
+test('real app feedback handlers preserve puzzle saves and never require network or a native bridge',()=>{
+ const f=appFixture({saved:JSON.stringify({slide:[7]})}),before=[...f.values];
+ f.feedbackForm.onsubmit({preventDefault(){}});
+ assert.equal(f.feedbackNodes.result.hidden,false);assert.match(f.feedbackNodes.preview.value,/R347H4CK3R\/Prism-Puzzle/);
+ f.feedbackNodes.reviewed.checked=true;f.feedbackNodes.reviewed.onchange();f.feedbackNodes.copy.onclick();
+ assert.equal(f.feedbackNodes.preview.selected,true);assert.deepEqual([...f.values],before);
+ f.game('slide');assert.equal(f.evaluate('models.slide.solved'),false);
+});
+test('future-format save remains byte-identical through feedback preparation and copying',()=>{
+ const saved=JSON.stringify({schema:99,unknown:{privateValue:'EXISTING_PRIVATE_SAVE'}}),f=appFixture({saved});
+ f.feedbackForm.onsubmit({preventDefault(){}});f.feedbackNodes.reviewed.checked=true;f.feedbackNodes.reviewed.onchange();f.feedbackNodes.copy.onclick();
+ assert.equal(f.values.get('prism-v1'),saved);assert.ok(!f.feedbackNodes.preview.value.includes('EXISTING_PRIVATE_SAVE'));
+ assert.equal([...f.values.keys()].filter(k=>k!=='prism-v1').length,0);
 });

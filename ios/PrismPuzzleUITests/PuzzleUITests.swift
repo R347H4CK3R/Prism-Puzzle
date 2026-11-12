@@ -164,7 +164,7 @@ final class PuzzleUITests: XCTestCase {
         try showControl(reviewLabel).tap()
         try showControl("Select draft for copying").tap()
         context = "Verify selection remains in the app"
-        XCTAssertTrue(app.staticTexts.containing(NSPredicate(
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(
             format: "label CONTAINS %@", "Nothing has been uploaded")).firstMatch.waitForExistence(timeout: 5))
         XCTAssertEqual(app.state, .runningForeground)
         let prepared = app.textViews["Prepared suggestion"]

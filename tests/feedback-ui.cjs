@@ -23,7 +23,7 @@ const assert = require('node:assert/strict');
    assert.equal(await page.evaluate(()=>localStorage.getItem('prism-v1')),before);
    assert.deepEqual(external,[]);
    await page.getByLabel('Suggestion details',{exact:true}).fill('Updated suggestion');
-   assert.equal(await page.getByRole('checkbox').isChecked(),false);
+   assert.equal(await page.locator('input[name="reviewed"]').isChecked(),false);
    assert.equal(await page.locator('[data-feedback-result]').isVisible(),false);
    await page.getByRole('button',{name:'Prepare local draft',exact:true}).click();
    assert.equal(await copy.isEnabled(),false);

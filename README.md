@@ -30,8 +30,12 @@ Open http://localhost:8080. Sync copies self-contained assets into both native w
 ## Progress and privacy
 Progress is stored only on the device. Existing v1 saves migrate without resetting valid puzzles. Damaged inputs are retained in verified recovery copies before replacing active progress. If backup verification fails, persistence pauses and play continues for the session. Reset clears active progress but keeps recovery copies.
 
-## iOS candidate 1.1.2 (5)
+## Pending iOS candidate 1.1.3 (6)
 
-Adds an offline suggestion composer with an explicit private-repository destination. Prepare and review text, then select it for manual copying. Submission happens outside the app using the user's own authorized GitHub account. No logs, saves, credentials, or identifiers are attached. Drafts are not persisted. Autonomous issue review and implementation are not part of this candidate.
+Retains the offline suggestion composer with an explicit private-repository destination. Prepare and review text, then select it for manual copying. Submission happens outside the app using the user's own authorized GitHub account. No logs, saves, credentials, or identifiers are attached. Drafts are not persisted. The app performs no issue review or implementation. Repository-only metadata support tracks separately reviewed suggestions without treating issue text as authority.
 
 The dedicated `prism-ios-candidate` Codemagic workflow runs the logic, package-validator, browser, feedback, and native simulator gates before assembling an unsigned device IPA. Android development and builds remain paused at 1.1.1 (4); only shared web assets are synchronized. This candidate is not a release until its exact-source hosted checks pass. Physical iPhone installation, signing and upgrade checks remain separate.
+
+## Combined candidate status
+
+Local 1.1.3 build 6 combines the controlled cube-surface change and repository review support. Full exact-source browser/native/device/package checks and manual review of every stable capture remain pending. No rendering fix or new release is claimed. Android metadata remains 1.1.1 build 4 and no Android build is enabled. The coordinating Dot confirms the separate daily review is installed and verified, starting the following morning; this is coordination confirmation, not an in-app feature or completed review run.

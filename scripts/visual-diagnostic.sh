@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Diagnostic-only: unchanged production code, no IPA, Android, signing or publication.
+# Diagnostic-only: inspect candidate rendering changes; no IPA, Android, signing or publication.
 set -euo pipefail
 cd "${CM_BUILD_DIR:-$(pwd)}"
 test "$(uname -s)" = Darwin

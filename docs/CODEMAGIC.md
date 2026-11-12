@@ -9,3 +9,7 @@ The package verifier checks identity, candidate version/build, minimum iOS 15, a
 Signing, physical-device installation and update continuity still require separate verification. This file describes the intended pipeline, not a claim it passed. The prior multi-platform script remains as historical source but is not selected by this branch's Codemagic configuration. Android is paused.
 
 Local checks: `npm test`, `python3 tests/test_codemagic_ipa.py`, `bash -n scripts/verify-ios-candidate.sh`. Local checks cannot substitute for hosted Mac/browser/simulator execution.
+
+## Pending 1.1.3 build 6
+
+Run the full pipeline on the final combined commit, not just the isolated visual diagnostic. The full pipeline now runs browser visual captures and exports native attachments before device packaging. Inspect every stable native capture and browser image manually; identical frames and passing UITests do not certify correct rendering. Keep unpublished if the isolated fix is not visually established, then repeat review on the exact candidate. Source/diagnostic artifacts remain private. Physical-device, signing and upgrade checks remain separate.

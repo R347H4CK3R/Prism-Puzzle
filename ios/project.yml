@@ -15,8 +15,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.prismpuzzle.app
-        MARKETING_VERSION: 1.1.2
-        CURRENT_PROJECT_VERSION: 5
+        MARKETING_VERSION: 1.1.3
+        CURRENT_PROJECT_VERSION: 6
         SWIFT_VERSION: 5.0
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Prism Puzzle

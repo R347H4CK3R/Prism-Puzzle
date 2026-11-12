@@ -42,6 +42,7 @@ for attempt in {1..30}; do curl -fsS http://127.0.0.1:8080/ >/dev/null && break;
 curl -fsS http://127.0.0.1:8080/ >/dev/null
 node tests/ui.cjs 2>&1 | tee cm-output/diagnostics/ui-tests.log
 node tests/feedback-ui.cjs 2>&1 | tee cm-output/diagnostics/feedback-ui-tests.log
+node tests/cube-visual-diagnostic.cjs 2>&1 | tee cm-output/diagnostics/cube-visual-tests.log
 node tests/touch-ui.cjs chromium 2>&1 | tee cm-output/diagnostics/chromium-touch.log
 node tests/touch-ui.cjs webkit 2>&1 | tee cm-output/diagnostics/webkit-touch.log
 cp docs/prism-phone.png docs/chromium-touch-qa.png docs/webkit-touch-qa.png docs/chromium-feedback-qa.png docs/webkit-feedback-qa.png cm-output/diagnostics/
@@ -62,6 +63,9 @@ PY
 )
 xcrun simctl bootstatus "$SIMULATOR_ID" -b
 xcodebuild test -project ios/PrismPuzzle.xcodeproj -scheme PrismPuzzle -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -resultBundlePath cm-work/simulator.xcresult CODE_SIGNING_ALLOWED=NO 2>&1 | tee cm-output/diagnostics/ios-simulator.log
+
+xcrun xcresulttool export attachments --path cm-work/simulator.xcresult --output-path cm-output/diagnostics/native-attachments
+# Captures require manual review; passing tests do not certify appearance.
 
 xcodebuild -project ios/PrismPuzzle.xcodeproj -scheme PrismPuzzle -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath cm-work/device CODE_SIGNING_ALLOWED=NO build 2>&1 | tee cm-output/diagnostics/ios-device.log
 APP=cm-work/device/Build/Products/Release-iphoneos/PrismPuzzle.app

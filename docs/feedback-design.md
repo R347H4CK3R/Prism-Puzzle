@@ -10,4 +10,8 @@ Incoming suggestions remain untrusted content. Future repository-side triage mus
 
 ## Verification and limits
 
-Node tests exercise validation, fixed routing, approval revocation, safe text rendering, local selection, and the real application's save preservation. Generated native bundles are synchronized and compared. This source proposal has not yet passed fresh iOS simulator, physical-device, or signed-upgrade validation. No new IPA is claimed. Existing published artifacts remain unchanged.
+Published 1.1.2 build 5 was built from 79157da4b5bf62259e8afabbf3f7b74cc17084ba. Its 60 Node tests, generated-asset equality, Chromium mobile/touch/offline cold-load checks, WebKit mouse-pointer/in-session-offline checks, feedback/privacy/save-preservation checks, all three native iOS simulator tests, device compilation and IPA validation passed. Native selection was verified; actual OS copy/paste, physical installation and signed upgrade remain untested.
+
+The limited public prerelease and canonical Strata entry are live. Native screenshots confirm a 3D cube but retained an intermittent edge occlusion; desktop WebKit capture flattens the cube. The pending 1.1.3 candidate removes redundant outer cube-core planes as a controlled rendering hypothesis. The fix is not established until manual visual review and full candidate checks pass. Do not claim visual perfection or physical-device verification.
+
+Repository-side review support is described in suggestion-review.md. It records trusted reviewer decisions and deadlines; it does not itself evaluate, execute, authorize or schedule work. Its additional Node tests do not change the published IPA. The coordinating Dot confirms the separate daily review is installed and verified, starting the following morning. This is not evidence of a completed run or in-app evaluation.
